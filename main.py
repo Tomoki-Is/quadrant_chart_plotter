@@ -21,7 +21,7 @@ class QuadrantApp:
         )
         self.canvas.grid(row=0, column=0)
 
-        # 十字線（双方向矢印付き）
+        """十字線（双方向矢印付き）と軸ラベル"""
         self.hline = self.canvas.create_line(
             0,
             self.center[1],
@@ -41,10 +41,22 @@ class QuadrantApp:
             arrow=tk.BOTH,
         )
 
-        self.canvas.tag_lower(self.hline)
-        self.canvas.tag_lower(self.vline)
+        # 軸ラベルを追加
+        label_font = ("Arial", 12, "bold")
 
-        # 操作方法枠（Canvas外）
+        # X軸ラベル
+        self.canvas.create_text(
+            self.width - 20, self.center[1] - 15, text="+X", font=label_font
+        )
+        self.canvas.create_text(20, self.center[1] - 15, text="-X", font=label_font)
+
+        # Y軸ラベル
+        self.canvas.create_text(self.center[0] + 20, 20, text="+Y", font=label_font)
+        self.canvas.create_text(
+            self.center[0] + 25, self.height - 20, text="-Y", font=label_font
+        )
+
+        """操作方法枠（Canvas外）"""
         instr_frame = tk.LabelFrame(main_frame, text="操作方法・凡例", padx=10, pady=10)
 
         # 赤/青の凡例
