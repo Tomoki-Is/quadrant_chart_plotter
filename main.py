@@ -21,13 +21,26 @@ class QuadrantApp:
         )
         self.canvas.grid(row=0, column=0)
 
-        # 十字線
+        # 十字線（双方向矢印付き）
         self.hline = self.canvas.create_line(
-            0, self.center[1], self.width, self.center[1], fill="black"
+            0,
+            self.center[1],
+            self.width,
+            self.center[1],
+            fill="black",
+            width=2,
+            arrow=tk.BOTH,
         )
         self.vline = self.canvas.create_line(
-            self.center[0], 0, self.center[0], self.height, fill="black"
+            self.center[0],
+            0,
+            self.center[0],
+            self.height,
+            fill="black",
+            width=2,
+            arrow=tk.BOTH,
         )
+
         self.canvas.tag_lower(self.hline)
         self.canvas.tag_lower(self.vline)
 
