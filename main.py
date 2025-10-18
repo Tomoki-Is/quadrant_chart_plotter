@@ -23,7 +23,7 @@ class QuadrantApp:
         )
         self.canvas.grid(row=0, column=0)
 
-        """十字線（双方向矢印付き）と軸ラベル"""
+        # 十字線（破線・双方向矢印）
         self.hline = self.canvas.create_line(
             0,
             self.center[1],
@@ -45,7 +45,7 @@ class QuadrantApp:
             dash=(5, 3),
         )
 
-        # 軸ラベルを追加
+        # 軸ラベル
         label_font = ("Arial", 12, "bold")
 
         # X軸ラベル
@@ -64,7 +64,7 @@ class QuadrantApp:
             self.center[0] + 25, self.height - 20, text=self.label_down, font=label_font
         )
 
-        """操作方法枠（Canvas外）"""
+        # 操作説明枠
         instr_frame = tk.LabelFrame(main_frame, text="凡例・操作方法", padx=10, pady=10)
 
         # 赤/青の凡例
@@ -75,7 +75,7 @@ class QuadrantApp:
         red_canvas = tk.Canvas(
             legend_frame, width=15, height=15, bg="white", highlightthickness=0
         )
-        red_canvas.create_oval(2, 2, 13, 13, fill="red")
+        red_canvas.create_oval(3, 3, 11, 11, fill="red")  # 小さく
         red_canvas.pack(side="left")
         tk.Label(legend_frame, text=": before", font=("Arial", 10)).pack(
             side="left", padx=(2, 10)
@@ -85,13 +85,12 @@ class QuadrantApp:
         blue_canvas = tk.Canvas(
             legend_frame, width=15, height=15, bg="white", highlightthickness=0
         )
-        blue_canvas.create_oval(2, 2, 13, 13, fill="blue")
+        blue_canvas.create_oval(3, 3, 11, 11, fill="blue")  # 小さく
         blue_canvas.pack(side="left")
         tk.Label(legend_frame, text=": after", font=("Arial", 10)).pack(
             side="left", padx=(2, 10)
         )
 
-        # 操作説明
         instructions = (
             "Step 1. 左クリック（1 回目: before, 2 回目: after）\n"
             "Step 2. 右クリック+ドラッグ: 修正\n"
@@ -104,7 +103,7 @@ class QuadrantApp:
         instr_frame.grid(row=0, column=1, sticky="nw", padx=10, pady=10)
 
         # 内部データ
-        self.points = []  # [(id, type, x_math, y_math, item_id, fixed_flag)]
+        self.points = []
         self.current_id = 1
         self.current_type = "before"
         self.drag_data = {"item": None, "offset": (0, 0)}
@@ -123,7 +122,7 @@ class QuadrantApp:
         else:
             self.load_csv()
 
-        # 保存ボタン（強調）
+        # 保存ボタン
         self.save_button = tk.Button(
             root,
             text=f"保存 ( ID={self.current_id} )",
@@ -140,7 +139,7 @@ class QuadrantApp:
     def read_config(self, filename):
         config = configparser.ConfigParser()
         config.read(filename)
-        self.item = str(config["Item"]["name"])  # outputファイル名
+        self.item = str(config["Item"]["name"])
         self.label_up = str(config["Axis"]["up"])
         self.label_down = str(config["Axis"]["down"])
         self.label_left = str(config["Axis"]["left"])
@@ -164,7 +163,6 @@ class QuadrantApp:
             print("このidはすでに固定されています。新しい入力を開始してください。")
             return
 
-        # すでに before/after 入力済みなら入力不可
         if self.has_type_for_current_id(self.current_type):
             print(f"{self.current_type} はすでに入力済みです。")
             self.current_type = "after" if self.current_type == "before" else "before"
@@ -174,16 +172,15 @@ class QuadrantApp:
         mx, my = self.canvas_to_math(x, y)
         color = "red" if self.current_type == "before" else "blue"
 
-        item = self.canvas.create_oval(x - 3, y - 3, x + 3, y + 3, fill=color)
+        # 小さい点に変更
+        r = 3
+        item = self.canvas.create_oval(x - r, y - r, x + r, y + r, fill=color)
         self.points.append((self.current_id, self.current_type, mx, my, item, False))
-        print(f"Added {self.current_type} (id={self.current_id}): ({mx:.1f}, {my:.1f})")
-        self.save_to_csv()  # リアルタイム保存
+        self.save_to_csv()
 
-        # 自動交互切替
         self.current_type = "after" if self.current_type == "before" else "before"
-        print(f"次の入力モード: {self.current_type}")
 
-    # ドラッグ開始
+    # ドラッグ系
     def on_drag_start(self, event):
         item = self.canvas.find_closest(event.x, event.y)
         if not item or item[0] in (self.hline, self.vline):
@@ -193,15 +190,14 @@ class QuadrantApp:
                 return
         self.drag_data["item"] = item[0]
 
-    # ドラッグ中
     def on_drag_motion(self, event):
         if self.drag_data["item"] is None:
             return
         item = self.drag_data["item"]
         x, y = event.x, event.y
-        self.canvas.coords(item, x - 3, y - 3, x + 3, y + 3)
+        r = 3
+        self.canvas.coords(item, x - r, y - r, x + r, y + r)
 
-    # ドラッグ終了
     def on_drag_release(self, event):
         if self.drag_data["item"] is None:
             return
@@ -217,21 +213,17 @@ class QuadrantApp:
         self.drag_data = {"item": None, "offset": (0, 0)}
         self.save_to_csv()
 
-    # 現在の id が固定済みか
     def is_current_id_fixed(self):
-        for pid, _, _, _, _, fixed in self.points:
-            if pid == self.current_id and fixed:
-                return True
-        return False
+        return any(
+            pid == self.current_id and fixed for pid, _, _, _, _, fixed in self.points
+        )
 
-    # 現在の id で type がすでにあるか
     def has_type_for_current_id(self, type_name):
-        for pid, ptype, _, _, _, _ in self.points:
-            if pid == self.current_id and ptype == type_name:
-                return True
-        return False
+        return any(
+            pid == self.current_id and ptype == type_name
+            for pid, ptype, _, _, _, _ in self.points
+        )
 
-    # 保存ボタン処理
     def save_and_fix(self):
         if not any(p[0] == self.current_id for p in self.points):
             print("このidの点がありません。")
@@ -267,8 +259,9 @@ class QuadrantApp:
         for _, row in df.iterrows():
             x_canvas, y_canvas = self.math_to_canvas(row["x"], row["y"])
             color = "#ff9999" if row["type"] == "before" else "#9999ff"
+            r = 3
             item = self.canvas.create_oval(
-                x_canvas - 3, y_canvas - 3, x_canvas + 3, y_canvas + 3, fill=color
+                x_canvas - r, y_canvas - r, x_canvas + r, y_canvas + r, fill=color
             )
             self.points.append(
                 (
@@ -285,9 +278,7 @@ class QuadrantApp:
     # PNG出力
     def visualize_scatter_plot(self):
         df = pd.read_csv(f"out/{self.item}.csv")
-        fig, ax = plt.subplots(figsize=(5, 5))  # 正方形キャンバス
-
-        # 範囲固定（破線矢印のために必要）
+        fig, ax = plt.subplots(figsize=(5, 5))
         ax.set_xlim(-300, 300)
         ax.set_ylim(-300, 300)
         ax.set_aspect("equal", adjustable="box")  # ← これで縦横比1:1
@@ -298,7 +289,7 @@ class QuadrantApp:
             xy=(300, 0),
             xytext=(-300, 0),
             arrowprops=dict(
-                arrowstyle="<->", color="black", linestyle="--", linewidth=1
+                arrowstyle="<->", color="black", linestyle="--", linewidth=0.8
             ),
         )
 
@@ -308,19 +299,19 @@ class QuadrantApp:
             xy=(0, 300),
             xytext=(0, -300),
             arrowprops=dict(
-                arrowstyle="<->", color="black", linestyle="--", linewidth=1
+                arrowstyle="<->", color="black", linestyle="--", linewidth=0.8
             ),
         )
 
-        # データ描画
         before = df[df["type"] == "before"]
         after = df[df["type"] == "after"]
         ax.scatter(before["x"], before["y"], s=10, color="red", label="before")
         ax.scatter(after["x"], after["y"], s=10, color="blue", label="after")
 
-        # 軸ラベル
-        ax.set_xlabel(self.label_axis_x)
-        ax.set_ylabel(self.label_axis_y)
+        # 軸ラベル・タイトル
+        ax.set_title(self.item, fontsize=14, fontweight="bold", pad=10)
+        ax.set_xlabel(self.label_axis_x, fontsize=12)
+        ax.set_ylabel(self.label_axis_y, fontsize=12)
 
         # 枠線とメモリを消す
         ax.set_xticks([])
@@ -328,9 +319,8 @@ class QuadrantApp:
         for spine in ax.spines.values():
             spine.set_visible(False)
 
-        # 凡例と保存
         ax.legend()
-        plt.savefig(f"out/{self.item}.png", bbox_inches="tight", pad_inches=0.1)
+        plt.savefig(f"out/{self.item}.png", bbox_inches="tight", pad_inches=0.2)
         plt.close(fig)
         print("PNGを保存しました。")
 
