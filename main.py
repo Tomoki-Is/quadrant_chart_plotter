@@ -245,7 +245,7 @@ class QuadrantApp:
 
         print(f"id={self.current_id} のデータを固定しました。")
         self.save_to_csv()
-        self.plot_and_save_png()
+        self.visualize_scatter_plot()
 
         # 次のIDに更新
         self.current_id += 1
@@ -283,7 +283,7 @@ class QuadrantApp:
             self.current_id = max(self.current_id, int(row["id"]) + 1)
 
     # PNG出力
-    def plot_and_save_png(self):
+    def visualize_scatter_plot(self):
         df = pd.read_csv(f"out/{self.item}.csv")
         fig, ax = plt.subplots(figsize=(5, 5))  # 正方形キャンバス
 
