@@ -174,7 +174,7 @@ class QuadrantApp:
         mx, my = self.canvas_to_math(x, y)
         color = "red" if self.current_type == "before" else "blue"
 
-        item = self.canvas.create_oval(x - 5, y - 5, x + 5, y + 5, fill=color)
+        item = self.canvas.create_oval(x - 3, y - 3, x + 3, y + 3, fill=color)
         self.points.append((self.current_id, self.current_type, mx, my, item, False))
         print(f"Added {self.current_type} (id={self.current_id}): ({mx:.1f}, {my:.1f})")
         self.save_to_csv()  # リアルタイム保存
@@ -199,7 +199,7 @@ class QuadrantApp:
             return
         item = self.drag_data["item"]
         x, y = event.x, event.y
-        self.canvas.coords(item, x - 5, y - 5, x + 5, y + 5)
+        self.canvas.coords(item, x - 3, y - 3, x + 3, y + 3)
 
     # ドラッグ終了
     def on_drag_release(self, event):
@@ -268,7 +268,7 @@ class QuadrantApp:
             x_canvas, y_canvas = self.math_to_canvas(row["x"], row["y"])
             color = "#ff9999" if row["type"] == "before" else "#9999ff"
             item = self.canvas.create_oval(
-                x_canvas - 5, y_canvas - 5, x_canvas + 5, y_canvas + 5, fill=color
+                x_canvas - 3, y_canvas - 3, x_canvas + 3, y_canvas + 3, fill=color
             )
             self.points.append(
                 (
