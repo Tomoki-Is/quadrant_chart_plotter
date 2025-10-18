@@ -11,7 +11,7 @@ class QuadrantApp:
         self.root.title("4象限クリックツール")
         self.width, self.height = 600, 600
         self.center = (self.width / 2, self.height / 2)
-        self.read_config()
+        self.read_config("config.ini")  # configファイルの読み込み
 
         # メインフレーム
         main_frame = tk.Frame(root)
@@ -32,6 +32,7 @@ class QuadrantApp:
             fill="black",
             width=2,
             arrow=tk.BOTH,
+            dash=(5, 3),
         )
         self.vline = self.canvas.create_line(
             self.center[0],
@@ -41,6 +42,7 @@ class QuadrantApp:
             fill="black",
             width=2,
             arrow=tk.BOTH,
+            dash=(5, 3),
         )
 
         # 軸ラベルを追加
@@ -63,7 +65,7 @@ class QuadrantApp:
         )
 
         """操作方法枠（Canvas外）"""
-        instr_frame = tk.LabelFrame(main_frame, text="操作方法・凡例", padx=10, pady=10)
+        instr_frame = tk.LabelFrame(main_frame, text="凡例・操作方法", padx=10, pady=10)
 
         # 赤/青の凡例
         legend_frame = tk.Frame(instr_frame)
@@ -75,7 +77,7 @@ class QuadrantApp:
         )
         red_canvas.create_oval(2, 2, 13, 13, fill="red")
         red_canvas.pack(side="left")
-        tk.Label(legend_frame, text="before", font=("Arial", 10)).pack(
+        tk.Label(legend_frame, text=": before", font=("Arial", 10)).pack(
             side="left", padx=(2, 10)
         )
 
@@ -85,21 +87,20 @@ class QuadrantApp:
         )
         blue_canvas.create_oval(2, 2, 13, 13, fill="blue")
         blue_canvas.pack(side="left")
-        tk.Label(legend_frame, text="after", font=("Arial", 10)).pack(
+        tk.Label(legend_frame, text=": after", font=("Arial", 10)).pack(
             side="left", padx=(2, 10)
         )
 
         # 操作説明
         instructions = (
-            "Step 1. 左クリック: 点追加（1 回目: before, 2 回目: after）\n"
-            "Step 2. 右クリック+ドラッグ: 点移動・修正\n"
-            "Step 3. 保存ボタン: 現在のIDを固定して薄色化\n"
+            "Step 1. 左クリック（1 回目: before, 2 回目: after）\n"
+            "Step 2. 右クリック+ドラッグ: 修正\n"
+            "Step 3. 保存ボタン\n"
         )
         instr_label = tk.Label(
             instr_frame, text=instructions, justify="left", font=("Arial", 10)
         )
         instr_label.pack(anchor="w")
-
         instr_frame.grid(row=0, column=1, sticky="nw", padx=10, pady=10)
 
         # 内部データ
@@ -136,9 +137,9 @@ class QuadrantApp:
         )
         self.save_button.pack(pady=10)
 
-    def read_config(self):
+    def read_config(self, filename):
         config = configparser.ConfigParser()
-        config.read("config.ini")
+        config.read(filename)
         self.item = str(config["Item"]["name"])  # outputファイル名
         self.label_up = str(config["Axis"]["up"])
         self.label_down = str(config["Axis"]["down"])
@@ -146,8 +147,6 @@ class QuadrantApp:
         self.label_right = str(config["Axis"]["right"])
         self.label_axis_x = str(config["Axis"]["label_x"])
         self.label_axis_y = str(config["Axis"]["label_y"])
-
-        return
 
     # 座標変換
     def canvas_to_math(self, x, y):
@@ -286,19 +285,52 @@ class QuadrantApp:
     # PNG出力
     def plot_and_save_png(self):
         df = pd.read_csv(f"out/{self.item}.csv")
-        fig, ax = plt.subplots()
-        ax.axhline(0, color="black")
-        ax.axvline(0, color="black")
+        fig, ax = plt.subplots(figsize=(5, 5))  # 正方形キャンバス
 
+        # 範囲固定（破線矢印のために必要）
+        ax.set_xlim(-300, 300)
+        ax.set_ylim(-300, 300)
+        ax.set_aspect("equal", adjustable="box")  # ← これで縦横比1:1
+
+        # 横軸
+        ax.annotate(
+            "",
+            xy=(300, 0),
+            xytext=(-300, 0),
+            arrowprops=dict(
+                arrowstyle="<->", color="black", linestyle="--", linewidth=1
+            ),
+        )
+
+        # 縦軸
+        ax.annotate(
+            "",
+            xy=(0, 300),
+            xytext=(0, -300),
+            arrowprops=dict(
+                arrowstyle="<->", color="black", linestyle="--", linewidth=1
+            ),
+        )
+
+        # データ描画
         before = df[df["type"] == "before"]
         after = df[df["type"] == "after"]
-        ax.scatter(before["x"], before["y"], color="red", label="before")
-        ax.scatter(after["x"], after["y"], color="blue", label="after")
+        ax.scatter(before["x"], before["y"], s=10, color="red", label="before")
+        ax.scatter(after["x"], after["y"], s=10, color="blue", label="after")
 
+        # 軸ラベル
         ax.set_xlabel(self.label_axis_x)
         ax.set_ylabel(self.label_axis_y)
+
+        # 枠線とメモリを消す
+        ax.set_xticks([])
+        ax.set_yticks([])
+        for spine in ax.spines.values():
+            spine.set_visible(False)
+
+        # 凡例と保存
         ax.legend()
-        plt.savefig(f"out/{self.item}.png")
+        plt.savefig(f"out/{self.item}.png", bbox_inches="tight", pad_inches=0.1)
         plt.close(fig)
         print("PNGを保存しました。")
 
