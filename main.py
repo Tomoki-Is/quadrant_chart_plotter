@@ -2,6 +2,7 @@ import tkinter as tk
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
+import configparser
 
 
 class QuadrantApp:
@@ -10,6 +11,7 @@ class QuadrantApp:
         self.root.title("4象限クリックツール")
         self.width, self.height = 600, 600
         self.center = (self.width / 2, self.height / 2)
+        self.read_config()
 
         # メインフレーム
         main_frame = tk.Frame(root)
@@ -46,14 +48,18 @@ class QuadrantApp:
 
         # X軸ラベル
         self.canvas.create_text(
-            self.width - 20, self.center[1] - 15, text="+X", font=label_font
+            self.width - 20, self.center[1] - 15, text=self.label_right, font=label_font
         )
-        self.canvas.create_text(20, self.center[1] - 15, text="-X", font=label_font)
+        self.canvas.create_text(
+            20, self.center[1] - 15, text=self.label_left, font=label_font
+        )
 
         # Y軸ラベル
-        self.canvas.create_text(self.center[0] + 20, 20, text="+Y", font=label_font)
         self.canvas.create_text(
-            self.center[0] + 25, self.height - 20, text="-Y", font=label_font
+            self.center[0] + 20, 20, text=self.label_up, font=label_font
+        )
+        self.canvas.create_text(
+            self.center[0] + 25, self.height - 20, text=self.label_down, font=label_font
         )
 
         """操作方法枠（Canvas外）"""
@@ -109,9 +115,9 @@ class QuadrantApp:
         self.canvas.bind("<ButtonRelease-3>", self.on_drag_release)
 
         # CSV初期化
-        if not os.path.exists("out/points.csv"):
+        if not os.path.exists(f"out/{self.item}.csv"):
             pd.DataFrame(columns=["id", "type", "x", "y"]).to_csv(
-                "out/points.csv", index=False
+                f"out/{self.item}.csv", index=False
             )
         else:
             self.load_csv()
@@ -129,6 +135,19 @@ class QuadrantApp:
             command=self.save_and_fix,
         )
         self.save_button.pack(pady=10)
+
+    def read_config(self):
+        config = configparser.ConfigParser()
+        config.read("config.ini")
+        self.item = str(config["Item"]["name"])  # outputファイル名
+        self.label_up = str(config["Axis"]["up"])
+        self.label_down = str(config["Axis"]["down"])
+        self.label_left = str(config["Axis"]["left"])
+        self.label_right = str(config["Axis"]["right"])
+        self.label_axis_x = str(config["Axis"]["label_x"])
+        self.label_axis_y = str(config["Axis"]["label_y"])
+
+        return
 
     # 座標変換
     def canvas_to_math(self, x, y):
@@ -241,11 +260,11 @@ class QuadrantApp:
             [(pid, ptype, x, y) for pid, ptype, x, y, _, _ in self.points],
             columns=["id", "type", "x", "y"],
         )
-        df.to_csv("out/points.csv", index=False)
+        df.to_csv(f"out/{self.item}.csv", index=False)
 
     # CSV読み込み
     def load_csv(self):
-        df = pd.read_csv("out/points.csv")
+        df = pd.read_csv(f"out/{self.item}.csv")
         for _, row in df.iterrows():
             x_canvas, y_canvas = self.math_to_canvas(row["x"], row["y"])
             color = "#ff9999" if row["type"] == "before" else "#9999ff"
@@ -266,7 +285,7 @@ class QuadrantApp:
 
     # PNG出力
     def plot_and_save_png(self):
-        df = pd.read_csv("out/points.csv")
+        df = pd.read_csv(f"out/{self.item}.csv")
         fig, ax = plt.subplots()
         ax.axhline(0, color="black")
         ax.axvline(0, color="black")
@@ -276,10 +295,10 @@ class QuadrantApp:
         ax.scatter(before["x"], before["y"], color="red", label="before")
         ax.scatter(after["x"], after["y"], color="blue", label="after")
 
-        ax.set_xlabel("X")
-        ax.set_ylabel("Y")
+        ax.set_xlabel(self.label_axis_x)
+        ax.set_ylabel(self.label_axis_y)
         ax.legend()
-        plt.savefig("out/points.png")
+        plt.savefig(f"out/{self.item}.png")
         plt.close(fig)
         print("PNGを保存しました。")
 
